@@ -40,3 +40,11 @@ build/
 .env.*
 !.env.example
 run-local.sh
+
+### FishBase import ###
+.venv/
+cache_fishbase/
+saida_fishbase/
+
+### Arquivos soltos ###
+*.zip
