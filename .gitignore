@@ -45,6 +45,7 @@ run-local.sh
 .venv/
 cache_fishbase/
 saida_fishbase/
+fishbase_import/
 
 ### Arquivos soltos ###
 *.zip
