@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../api.dart';
+import '../config.dart';
 import '../models/especie.dart';
 import '../theme.dart';
 
@@ -21,6 +22,9 @@ class _EspeciesPageState extends State<EspeciesPage> {
   bool _carregando = true;
   String? _erro;
 
+  String? _especieEmUsoId; // espécie atual do tanque
+  String? _selecionandoId; // espécie sendo enviada à API
+
   @override
   void initState() {
     super.initState();
@@ -37,9 +41,11 @@ class _EspeciesPageState extends State<EspeciesPage> {
         _grupos = await _api.fetchGrupos();
       }
       final especies = await _api.fetchEspecies(grupo: _grupo);
+      final tanque = await _api.fetchTanque(tanqueId);
       if (!mounted) return;
       setState(() {
         _especies = especies;
+        _especieEmUsoId = tanque.especieId;
         _carregando = false;
       });
     } on ApiException catch (e) {
@@ -48,6 +54,26 @@ class _EspeciesPageState extends State<EspeciesPage> {
         _erro = e.mensagem;
         _carregando = false;
       });
+    }
+  }
+
+  Future<void> _selecionar(Especie especie) async {
+    setState(() => _selecionandoId = especie.id);
+    final mensagens = ScaffoldMessenger.of(context);
+    try {
+      await _api.definirEspecie(tanqueId, especie.id);
+      if (!mounted) return;
+      setState(() {
+        _especieEmUsoId = especie.id;
+        _selecionandoId = null;
+      });
+      mensagens.showSnackBar(
+        SnackBar(content: Text('Espécie do tanque: ${especie.nomeComum}')),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _selecionandoId = null);
+      mensagens.showSnackBar(SnackBar(content: Text(e.mensagem)));
     }
   }
 
@@ -163,20 +189,36 @@ class _EspeciesPageState extends State<EspeciesPage> {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 340,
-        mainAxisExtent: 220,
+        mainAxisExtent: 272,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
       itemCount: lista.length,
-      itemBuilder: (context, i) => _EspecieCard(lista[i]),
+      itemBuilder: (context, i) {
+        final e = lista[i];
+        return _EspecieCard(
+          e,
+          emUso: e.id == _especieEmUsoId,
+          selecionando: e.id == _selecionandoId,
+          onSelecionar: () => _selecionar(e),
+        );
+      },
     );
   }
 }
 
 class _EspecieCard extends StatelessWidget {
-  const _EspecieCard(this.especie);
+  const _EspecieCard(
+    this.especie, {
+    required this.emUso,
+    required this.selecionando,
+    required this.onSelecionar,
+  });
 
   final Especie especie;
+  final bool emUso;
+  final bool selecionando;
+  final VoidCallback onSelecionar;
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +228,10 @@ class _EspecieCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.borda),
+        side: BorderSide(
+          color: emUso ? AppColors.ok : AppColors.borda,
+          width: emUso ? 2 : 1,
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -212,8 +257,13 @@ class _EspecieCard extends StatelessWidget {
               spacing: 6,
               runSpacing: 6,
               children: [
+                if (emUso)
+                  const _Tag('Em uso',
+                      fundo: AppColors.okFundo, cor: AppColors.okTexto),
                 if (especie.grupoHidroquimico != null)
-                  _Tag(especie.grupoHidroquimico!, destaque: true),
+                  _Tag(especie.grupoHidroquimico!,
+                      fundo: AppColors.primariaClara,
+                      cor: AppColors.primariaEscura),
                 const _Tag('Água doce'),
               ],
             ),
@@ -221,6 +271,19 @@ class _EspecieCard extends StatelessWidget {
             _Fato('pH', especie.faixaPh),
             _Fato('Temperatura', especie.faixaTemp),
             _Fato('Tanque mínimo', especie.tanqueMinimo),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: emUso
+                  ? const OutlinedButton(
+                      onPressed: null,
+                      child: Text('Espécie selecionada'),
+                    )
+                  : FilledButton(
+                      onPressed: selecionando ? null : onSelecionar,
+                      child: Text(selecionando ? 'Selecionando...' : 'Selecionar'),
+                    ),
+            ),
           ],
         ),
       ),
@@ -229,26 +292,25 @@ class _EspecieCard extends StatelessWidget {
 }
 
 class _Tag extends StatelessWidget {
-  const _Tag(this.texto, {this.destaque = false});
+  const _Tag(
+    this.texto, {
+    this.fundo = const Color(0xFFEEF3F5),
+    this.cor = AppColors.textoSecundario,
+  });
 
   final String texto;
-  final bool destaque;
+  final Color fundo;
+  final Color cor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: destaque ? AppColors.primariaClara : const Color(0xFFEEF3F5),
+        color: fundo,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        texto,
-        style: TextStyle(
-          fontSize: 12,
-          color: destaque ? AppColors.primariaEscura : AppColors.textoSecundario,
-        ),
-      ),
+      child: Text(texto, style: TextStyle(fontSize: 12, color: cor)),
     );
   }
 }
