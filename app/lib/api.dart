@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'config.dart';
 import 'models/especie.dart';
+import 'models/status_tanque.dart';
 import 'models/tanque.dart';
 
 class ApiException implements Exception {
@@ -89,5 +90,10 @@ class ApiClient {
       corpo: {'especieId': especieId},
     );
     return Tanque.fromJson(dados as Map<String, dynamic>);
+  }
+
+  Future<StatusTanque> fetchStatus(String tanqueId) async {
+    final dados = await _enviar('GET', '/tanques/$tanqueId/status');
+    return StatusTanque.fromJson(dados as Map<String, dynamic>);
   }
 }

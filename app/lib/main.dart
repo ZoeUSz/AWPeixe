@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'pages/especies_page.dart';
+import 'pages/monitor_page.dart';
 import 'theme.dart';
 
 void main() => runApp(const AquaMonitorApp());
@@ -14,7 +14,7 @@ class AquaMonitorApp extends StatelessWidget {
       title: 'AquaMonitor',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
-      home: const EspeciesPage(),
+      home: const MonitorPage(),
     );
   }
 }

@@ -60,6 +60,7 @@ class _EspeciesPageState extends State<EspeciesPage> {
   Future<void> _selecionar(Especie especie) async {
     setState(() => _selecionandoId = especie.id);
     final mensagens = ScaffoldMessenger.of(context);
+    final navegador = Navigator.of(context);
     try {
       await _api.definirEspecie(tanqueId, especie.id);
       if (!mounted) return;
@@ -70,6 +71,7 @@ class _EspeciesPageState extends State<EspeciesPage> {
       mensagens.showSnackBar(
         SnackBar(content: Text('Espécie do tanque: ${especie.nomeComum}')),
       );
+      if (navegador.canPop()) navegador.pop();
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _selecionandoId = null);
