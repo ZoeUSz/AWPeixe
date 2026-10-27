@@ -126,10 +126,9 @@ class _MonitorPageState extends State<MonitorPage> {
                 runSpacing: 16,
                 children: [
                   if (temperatura != null)
-                    SizedBox(width: 380, child: _ParametroCard(temperatura)),
+                    SizedBox(width: 520, child: _ParametroCard(temperatura)),
                   if (ph != null)
-                    SizedBox(width: 380, child: _ParametroCard(ph)),
-                  const SizedBox(width: 380, child: _OxigenioCard()),
+                    SizedBox(width: 520, child: _ParametroCard(ph)),
                 ],
               ),
             ],
@@ -304,14 +303,19 @@ class _BannerStatus extends StatelessWidget {
           acao: 'Escolher espécie',
         );
       default:
-        return const _BannerInfo(
+        final desatualizada =
+            status.parametros.any((p) => p.situacao == 'DESATUALIZADA');
+        return _BannerInfo(
           fundo: AppColors.avisoFundo,
-          borda: Color(0xFFEDCF84),
+          borda: const Color(0xFFEDCF84),
           cor: AppColors.avisoTexto,
           icone: Icons.schedule,
-          titulo: 'Aguardando dados do sensor',
-          subtitulo:
-              'Os cards serão atualizados assim que chegarem novas leituras.',
+          titulo: desatualizada
+              ? 'Sem leitura recente dos sensores'
+              : 'Aguardando dados do sensor',
+          subtitulo: desatualizada
+              ? 'A última leitura é antiga. Verifique a conexão dos sensores.'
+              : 'Os cards serão atualizados assim que chegarem novas leituras.',
         );
     }
   }
@@ -380,6 +384,8 @@ class _ParametroCard extends StatelessWidget {
         return 'Acima da faixa';
       case 'ABAIXO':
         return 'Abaixo da faixa';
+      case 'DESATUALIZADA':
+        return 'Sem leitura recente';
       case 'SEM_SENSOR':
         return 'Sem sensor';
       case 'SEM_FAIXA':
@@ -412,13 +418,26 @@ class _ParametroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final fora = p.foraDaFaixa;
     final ok = p.situacao == 'OK';
+    final antiga = p.situacao == 'DESATUALIZADA';
     final fundoBadge = fora
         ? AppColors.alertaFundo
-        : (ok ? AppColors.okFundo : const Color(0xFFEEF3F5));
+        : ok
+            ? AppColors.okFundo
+            : antiga
+                ? AppColors.avisoFundo
+                : const Color(0xFFEEF3F5);
     final textoBadge = fora
         ? AppColors.alertaTexto
-        : (ok ? AppColors.okTexto : AppColors.textoSecundario);
-    final corValor = fora ? AppColors.alertaTexto : AppColors.texto;
+        : ok
+            ? AppColors.okTexto
+            : antiga
+                ? AppColors.avisoTexto
+                : AppColors.textoSecundario;
+    final corValor = fora
+        ? AppColors.alertaTexto
+        : antiga
+            ? AppColors.neutro
+            : AppColors.texto;
     final valor = p.valor == null
         ? '—'
         : formatarNumero(p.valor!, casas: _temperatura ? 1 : 2);
@@ -520,7 +539,7 @@ class _ParametroCard extends StatelessWidget {
             Text(_ideal,
                 style: const TextStyle(color: AppColors.textoSecundario)),
             const SizedBox(height: 14),
-            if (p.valor != null && p.min != null && p.max != null)
+            if (p.valor != null && p.min != null && p.max != null && !antiga)
               _Medidor(valor: p.valor!, min: p.min!, max: p.max!, fora: fora)
             else
               const SizedBox(height: 18),
@@ -618,57 +637,6 @@ class _Medidor extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _OxigenioCard extends StatelessWidget {
-  const _OxigenioCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFFF8FAFB),
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: const BorderSide(color: AppColors.borda),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.air, color: AppColors.neutro),
-                Spacer(),
-                Text('Sem dados',
-                    style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textoSecundario)),
-              ],
-            ),
-            SizedBox(height: 14),
-            Text('Oxigênio',
-                style:
-                    TextStyle(fontSize: 16, color: AppColors.textoSecundario)),
-            SizedBox(height: 4),
-            Text('—',
-                style: TextStyle(
-                    fontSize: 42,
-                    fontWeight: FontWeight.w700,
-                    height: 1.1,
-                    color: AppColors.neutro)),
-            SizedBox(height: 6),
-            Text('Sensor não instalado',
-                style: TextStyle(color: AppColors.textoSecundario)),
-            SizedBox(height: 48),
-          ],
-        ),
-      ),
     );
   }
 }

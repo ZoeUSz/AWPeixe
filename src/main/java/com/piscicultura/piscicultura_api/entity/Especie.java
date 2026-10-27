@@ -46,12 +46,6 @@ public class Especie {
     @Column(name = "temp_max", precision = 4, scale = 2)
     private BigDecimal tempMax;
 
-    @Column(name = "oxigenio_min", precision = 4, scale = 2)
-    private BigDecimal oxigenioMin;
-
-    @Column(name = "oxigenio_max", precision = 4, scale = 2)
-    private BigDecimal oxigenioMax;
-
     @Column(length = 50)
     private String clima;
 

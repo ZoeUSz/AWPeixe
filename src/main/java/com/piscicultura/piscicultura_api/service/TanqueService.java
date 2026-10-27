@@ -12,12 +12,15 @@ import com.piscicultura.piscicultura_api.repository.LeituraRepository;
 import com.piscicultura.piscicultura_api.repository.SensorRepository;
 import com.piscicultura.piscicultura_api.repository.TanqueRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +34,10 @@ public class TanqueService {
     private final EspecieRepository especies;
     private final SensorRepository sensores;
     private final LeituraRepository leituras;
+
+    // Idade máxima (em segundos) para uma leitura ainda ser considerada atual.
+    @Value("${monitoramento.leitura-max-idade-segundos:60}")
+    private long maxIdadeSegundos;
 
     @Transactional(readOnly = true)
     public List<TanqueResponse> listar() {
@@ -83,6 +90,15 @@ public class TanqueService {
         }
 
         BigDecimal valor = ultima.get().getValor();
+        LocalDateTime registradoEm = ultima.get().getRegistradoEm();
+
+        // Leitura antiga demais não é confiável: não compara com a faixa.
+        long idade = Duration.between(registradoEm, LocalDateTime.now()).getSeconds();
+        if (idade > maxIdadeSegundos) {
+            return new ParametroStatus(tipo, unidade, valor, min, max,
+                    "DESATUALIZADA", registradoEm);
+        }
+
         String situacao;
         if (min == null || max == null) {
             situacao = "SEM_FAIXA";
@@ -94,7 +110,7 @@ public class TanqueService {
             situacao = "OK";
         }
         return new ParametroStatus(tipo, unidade, valor, min, max,
-                situacao, ultima.get().getRegistradoEm());
+                situacao, registradoEm);
     }
 
     private String statusGeral(Especie especie, List<ParametroStatus> parametros) {
@@ -107,7 +123,9 @@ public class TanqueService {
             return "SEM_ESPECIE";
         }
         boolean semDados = parametros.stream()
-                .anyMatch(p -> p.situacao().equals("SEM_LEITURA") || p.situacao().equals("SEM_SENSOR"));
+                .anyMatch(p -> p.situacao().equals("SEM_LEITURA")
+                        || p.situacao().equals("SEM_SENSOR")
+                        || p.situacao().equals("DESATUALIZADA"));
         return semDados ? "SEM_DADOS" : "OK";
     }
 
