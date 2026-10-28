@@ -7,6 +7,7 @@ import '../config.dart';
 import '../formatacao.dart';
 import '../models/status_tanque.dart';
 import '../theme.dart';
+import 'alertas_page.dart';
 import 'especies_page.dart';
 import 'historico_page.dart';
 
@@ -62,6 +63,12 @@ class _MonitorPageState extends State<MonitorPage> {
     _atualizar();
   }
 
+  void _abrirAlertas() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AlertasPage()),
+    );
+  }
+
   void _abrirHistorico() {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const HistoricoPage()),
@@ -76,6 +83,12 @@ class _MonitorPageState extends State<MonitorPage> {
         title: const Text('AquaMonitor',
             style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
+          TextButton.icon(
+            onPressed: _abrirAlertas,
+            icon: const Icon(Icons.notifications_none),
+            label: const Text('Alertas'),
+          ),
+          const SizedBox(width: 8),
           TextButton.icon(
             onPressed: _abrirHistorico,
             icon: const Icon(Icons.show_chart),

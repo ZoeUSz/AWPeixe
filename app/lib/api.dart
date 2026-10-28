@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'config.dart';
+import 'models/alerta.dart';
 import 'models/especie.dart';
 import 'models/historico.dart';
 import 'models/status_tanque.dart';
@@ -105,5 +106,19 @@ class ApiClient {
       query: {'pontos': '$pontos'},
     );
     return Historico.fromJson(dados as Map<String, dynamic>);
+  }
+
+  Future<List<Alerta>> fetchAlertas(String tanqueId, {int limite = 50}) async {
+    final dados = await _enviar(
+      'GET',
+      '/tanques/$tanqueId/alertas',
+      query: {'limite': '$limite'},
+    ) as List<dynamic>;
+    final saida = <Alerta>[];
+    for (final item in dados) {
+      final a = Alerta.tentar(item as Map<String, dynamic>);
+      if (a != null) saida.add(a);
+    }
+    return saida;
   }
 }
