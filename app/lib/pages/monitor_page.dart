@@ -23,6 +23,7 @@ class _MonitorPageState extends State<MonitorPage> {
   StatusTanque? _status;
   String? _erro;
   bool _buscando = false;
+  int _alertasAbertos = 0;
   Timer? _timer;
 
   @override
@@ -43,9 +44,11 @@ class _MonitorPageState extends State<MonitorPage> {
     _buscando = true;
     try {
       final status = await _api.fetchStatus(tanqueId);
+      final abertos = await _contarAlertasAbertos();
       if (!mounted) return;
       setState(() {
         _status = status;
+        _alertasAbertos = abertos ?? _alertasAbertos;
         _erro = null;
       });
     } on ApiException catch (e) {
@@ -53,6 +56,16 @@ class _MonitorPageState extends State<MonitorPage> {
       setState(() => _erro = e.mensagem);
     } finally {
       _buscando = false;
+    }
+  }
+
+  // Quantos alertas estão em andamento (null se não deu para consultar).
+  Future<int?> _contarAlertasAbertos() async {
+    try {
+      final alertas = await _api.fetchAlertas(tanqueId);
+      return alertas.where((a) => !a.resolvido).length;
+    } on ApiException {
+      return null;
     }
   }
 
@@ -85,7 +98,17 @@ class _MonitorPageState extends State<MonitorPage> {
         actions: [
           TextButton.icon(
             onPressed: _abrirAlertas,
-            icon: const Icon(Icons.notifications_none),
+            icon: Badge(
+              isLabelVisible: _alertasAbertos > 0,
+              backgroundColor: AppColors.alerta,
+              textColor: Colors.white,
+              label: Text('$_alertasAbertos'),
+              child: Icon(
+                _alertasAbertos > 0
+                    ? Icons.notifications_active
+                    : Icons.notifications_none,
+              ),
+            ),
             label: const Text('Alertas'),
           ),
           const SizedBox(width: 8),
