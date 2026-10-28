@@ -18,6 +18,7 @@ public class LeituraService {
 
     private final SensorRepository sensores;
     private final LeituraRepository leituras;
+    private final AlertaService alertaService;
 
     @Transactional
     public LeituraResponse registrar(LeituraRequest req) {
@@ -34,6 +35,9 @@ public class LeituraService {
         leitura.setSensor(sensor);
         leitura.setValor(req.valor());
         leitura = leituras.save(leitura);
+
+        // Abre ou encerra alertas conforme a faixa da espécie do tanque.
+        alertaService.avaliar(leitura, sensor);
 
         return new LeituraResponse(
                 leitura.getId(), sensor.getId(), sensor.getTipo(),
