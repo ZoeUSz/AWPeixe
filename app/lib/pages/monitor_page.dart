@@ -8,6 +8,7 @@ import '../formatacao.dart';
 import '../models/status_tanque.dart';
 import '../theme.dart';
 import 'especies_page.dart';
+import 'historico_page.dart';
 
 class MonitorPage extends StatefulWidget {
   const MonitorPage({super.key});
@@ -61,6 +62,12 @@ class _MonitorPageState extends State<MonitorPage> {
     _atualizar();
   }
 
+  void _abrirHistorico() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const HistoricoPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final conectado = _erro == null && _status != null;
@@ -68,7 +75,15 @@ class _MonitorPageState extends State<MonitorPage> {
       appBar: AppBar(
         title: const Text('AquaMonitor',
             style: TextStyle(fontWeight: FontWeight.w700)),
-        actions: [_Conexao(conectado: conectado)],
+        actions: [
+          TextButton.icon(
+            onPressed: _abrirHistorico,
+            icon: const Icon(Icons.show_chart),
+            label: const Text('Histórico'),
+          ),
+          const SizedBox(width: 16),
+          _Conexao(conectado: conectado),
+        ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, color: AppColors.borda),

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'config.dart';
 import 'models/especie.dart';
+import 'models/historico.dart';
 import 'models/status_tanque.dart';
 import 'models/tanque.dart';
 
@@ -95,5 +96,14 @@ class ApiClient {
   Future<StatusTanque> fetchStatus(String tanqueId) async {
     final dados = await _enviar('GET', '/tanques/$tanqueId/status');
     return StatusTanque.fromJson(dados as Map<String, dynamic>);
+  }
+
+  Future<Historico> fetchHistorico(String tanqueId, {int pontos = 60}) async {
+    final dados = await _enviar(
+      'GET',
+      '/tanques/$tanqueId/historico',
+      query: {'pontos': '$pontos'},
+    );
+    return Historico.fromJson(dados as Map<String, dynamic>);
   }
 }
