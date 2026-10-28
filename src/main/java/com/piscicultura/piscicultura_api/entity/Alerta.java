@@ -35,6 +35,14 @@ public class Alerta {
     @Column(nullable = false, columnDefinition = "text")
     private String mensagem;
 
+    // Nome comum da espécie avaliada quando o alerta foi aberto.
+    @Column(length = 100)
+    private String especieNome;
+
+    // Ação indicada (ex.: ligar o cooler).
+    @Column(length = 200)
+    private String acao;
+
     @Column(nullable = false)
     private boolean resolvido;
 

@@ -264,7 +264,19 @@ class _AlertaCard extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 15, fontWeight: FontWeight.w700),
                   ),
-                  const SizedBox(height: 4),
+                  if (a.especie != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Espécie: ${a.especie}',
+                      style: const TextStyle(
+                          fontSize: 13, color: AppColors.textoSecundario),
+                    ),
+                  ],
+                  if (a.acao != null) ...[
+                    const SizedBox(height: 8),
+                    _Acao(alerta: a, destaque: aberto),
+                  ],
+                  const SizedBox(height: 6),
                   Text(
                     detalhe,
                     style: const TextStyle(
@@ -291,6 +303,51 @@ class _AlertaCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Ação indicada para o alerta: cooler, aquecedor ou correção do pH.
+class _Acao extends StatelessWidget {
+  const _Acao({required this.alerta, required this.destaque});
+
+  final Alerta alerta;
+  final bool destaque;
+
+  IconData get _icone {
+    switch (alerta.tipo) {
+      case 'TEMPERATURA_ACIMA':
+        return Icons.air; // ventoinha
+      case 'TEMPERATURA_ABAIXO':
+        return Icons.local_fire_department_outlined; // aquecedor
+      default:
+        return Icons.science_outlined;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cor = destaque ? AppColors.alertaTexto : AppColors.textoSecundario;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: destaque ? AppColors.alertaFundo : const Color(0xFFEEF3F5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_icone, size: 16, color: cor),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              'Ação: ${alerta.acao}',
+              style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w600, color: cor),
+            ),
+          ),
+        ],
       ),
     );
   }

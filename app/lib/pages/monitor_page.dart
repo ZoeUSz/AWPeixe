@@ -317,8 +317,9 @@ class _BannerStatus extends StatelessWidget {
           borda: const Color(0xFFF1BCBC),
           cor: AppColors.alertaTexto,
           icone: Icons.warning_amber_rounded,
-          titulo: 'Alerta: ${_descreverAlerta()}',
-          subtitulo: 'Verifique o aquário e os equipamentos.',
+          titulo:
+              'Alerta para ${status.especie ?? 'o tanque'}: ${_descreverAlerta()}',
+          subtitulo: _acoes(),
         );
       case 'SEM_ESPECIE':
         return const _BannerInfo(
@@ -346,6 +347,25 @@ class _BannerStatus extends StatelessWidget {
               : 'Os cards serão atualizados assim que chegarem novas leituras.',
         );
     }
+  }
+
+  // Ação indicada para cada parâmetro fora da faixa.
+  String _acoes() {
+    final acoes = <String>[];
+    for (final p in status.parametros) {
+      if (p.tipo == 'TEMPERATURA' && p.situacao == 'ACIMA') {
+        acoes.add('ligar o cooler para resfriar a água');
+      } else if (p.tipo == 'TEMPERATURA' && p.situacao == 'ABAIXO') {
+        acoes.add('ligar o aquecedor para esquentar a água');
+      } else if (p.tipo == 'PH' && p.situacao == 'ACIMA') {
+        acoes.add('reduzir o pH da água');
+      } else if (p.tipo == 'PH' && p.situacao == 'ABAIXO') {
+        acoes.add('elevar o pH da água');
+      }
+    }
+    if (acoes.isEmpty) return 'Verifique o aquário e os equipamentos.';
+    final texto = acoes.join('; ');
+    return 'Ação: ${texto[0].toUpperCase()}${texto.substring(1)}.';
   }
 
   String _descreverAlerta() {

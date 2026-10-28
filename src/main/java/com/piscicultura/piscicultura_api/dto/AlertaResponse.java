@@ -8,13 +8,16 @@ import java.util.UUID;
 public record AlertaResponse(
         UUID id,
         String tipo,
+        String especie,
         String mensagem,
+        String acao,
         boolean resolvido,
         LocalDateTime geradoEm,
         LocalDateTime resolvidoEm) {
 
     public static AlertaResponse de(Alerta a) {
-        return new AlertaResponse(a.getId(), a.getTipo(), a.getMensagem(),
-                a.isResolvido(), a.getGeradoEm(), a.getResolvidoEm());
+        return new AlertaResponse(a.getId(), a.getTipo(), a.getEspecieNome(),
+                a.getMensagem(), a.getAcao(), a.isResolvido(),
+                a.getGeradoEm(), a.getResolvidoEm());
     }
 }

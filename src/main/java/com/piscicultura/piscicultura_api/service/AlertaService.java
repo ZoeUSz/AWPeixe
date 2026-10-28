@@ -18,8 +18,9 @@ import java.util.Optional;
 /**
  * Gera e encerra alertas a cada leitura recebida.
  * - Fora da faixa da espécie e sem alerta aberto: abre um alerta.
- * - Continua fora da faixa, mesmo sentido: não repete.
- * - Muda de lado (acima -> abaixo): fecha o anterior e abre outro.
+ * - Continua fora, mesmo sentido e mesma espécie: não repete.
+ * - Mudou de lado (acima -> abaixo) ou de espécie: fecha o anterior e abre
+ * outro.
  * - Voltou para a faixa: fecha o alerta aberto.
  */
 @Service
@@ -37,6 +38,7 @@ public class AlertaService {
             return; // sem espécie não há faixa para comparar
         }
         Especie especie = tanque.getEspecie();
+        String nomeEspecie = especie.getNomeComum();
 
         String parametro = sensor.getTipo() == null
                 ? ""
@@ -78,20 +80,23 @@ public class AlertaService {
                         tanque.getId(), parametro);
 
         if (aberto.isPresent()) {
-            if (tipoNovo != null && aberto.get().getTipo().equals(tipoNovo)) {
+            Alerta atual = aberto.get();
+            boolean mesmoAlerta = tipoNovo != null
+                    && atual.getTipo().equals(tipoNovo)
+                    && nomeEspecie != null
+                    && nomeEspecie.equals(atual.getEspecieNome());
+            if (mesmoAlerta) {
                 return; // continua fora da faixa: não repete o alerta
             }
-            Alerta antigo = aberto.get();
-            antigo.setResolvido(true);
-            antigo.setResolvidoEm(LocalDateTime.now());
-            alertas.save(antigo);
+            atual.setResolvido(true);
+            atual.setResolvidoEm(LocalDateTime.now());
+            alertas.save(atual);
         }
 
         if (tipoNovo == null) {
             return; // voltou para a faixa
         }
 
-        // pH não tem unidade de verdade (o "pH" do sensor repetiria o nome).
         String un = parametro.equals("PH")
                 || sensor.getUnidade() == null || sensor.getUnidade().isBlank()
                         ? ""
@@ -100,11 +105,24 @@ public class AlertaService {
         novo.setLeitura(leitura);
         novo.setTanque(tanque);
         novo.setTipo(tipoNovo);
+        novo.setEspecieNome(nomeEspecie);
+        novo.setAcao(acaoPara(tipoNovo));
         novo.setMensagem(String.format(PT_BR,
-                "%s %s do ideal: %s%s (faixa %s a %s%s)",
-                nome, sentido, fmt(valor, casas), un,
+                "%s %s do ideal para %s: %s%s (faixa %s a %s%s)",
+                nome, sentido, nomeEspecie, fmt(valor, casas), un,
                 fmt(min, casas), fmt(max, casas), un));
         alertas.save(novo);
+    }
+
+    // Ação indicada para cada tipo de alerta.
+    static String acaoPara(String tipo) {
+        return switch (tipo) {
+            case "TEMPERATURA_ACIMA" -> "Ligar o cooler para resfriar a água";
+            case "TEMPERATURA_ABAIXO" -> "Ligar o aquecedor para esquentar a água";
+            case "PH_ACIMA" -> "Reduzir o pH da água (correção manual)";
+            case "PH_ABAIXO" -> "Elevar o pH da água (correção manual)";
+            default -> null;
+        };
     }
 
     private static String fmt(BigDecimal v, int casas) {

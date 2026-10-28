@@ -6,6 +6,8 @@ class Alerta {
     required this.resolvido,
     required this.geradoEm,
     this.resolvidoEm,
+    this.especie,
+    this.acao,
   });
 
   final String id;
@@ -14,6 +16,8 @@ class Alerta {
   final bool resolvido;
   final DateTime geradoEm;
   final DateTime? resolvidoEm;
+  final String? especie; // espécie avaliada quando o alerta abriu
+  final String? acao; // ação indicada (ex.: ligar o cooler)
 
   bool get temperatura => tipo.startsWith('TEMPERATURA');
 
@@ -35,6 +39,8 @@ class Alerta {
       resolvido: (j['resolvido'] ?? false) as bool,
       geradoEm: inicio,
       resolvidoEm: _data(j['resolvidoEm']),
+      especie: j['especie'] as String?,
+      acao: j['acao'] as String?,
     );
   }
 }
