@@ -15,9 +15,9 @@ class EspeciesPage extends StatefulWidget {
 class _EspeciesPageState extends State<EspeciesPage> {
   final _api = ApiClient();
 
-  List<String> _grupos = [];
   List<Especie> _especies = [];
-  String? _grupo; // null = todos
+  String? _termica; // null = todas (Água Fria / Água Tropical)
+  String? _ph; // null = todos (Ácido / Neutro / Alcalino)
   String _busca = '';
   bool _carregando = true;
   String? _erro;
@@ -37,10 +37,7 @@ class _EspeciesPageState extends State<EspeciesPage> {
       _erro = null;
     });
     try {
-      if (_grupos.isEmpty) {
-        _grupos = await _api.fetchGrupos();
-      }
-      final especies = await _api.fetchEspecies(grupo: _grupo);
+      final especies = await _api.fetchEspecies();
       final tanque = await _api.fetchTanque(tanqueId);
       if (!mounted) return;
       setState(() {
@@ -79,19 +76,16 @@ class _EspeciesPageState extends State<EspeciesPage> {
     }
   }
 
+  // Os filtros são aplicados aqui, com as regras do Quadro 6 do relatório.
   List<Especie> get _filtradas {
     final q = _busca.trim().toLowerCase();
-    if (q.isEmpty) return _especies;
-    return _especies
-        .where((e) =>
-            e.nomeComum.toLowerCase().contains(q) ||
-            e.nomeCientifico.toLowerCase().contains(q))
-        .toList();
-  }
-
-  void _escolherGrupo(String? grupo) {
-    _grupo = grupo;
-    _carregar();
+    return _especies.where((e) {
+      if (_termica != null && e.classeTermica != _termica) return false;
+      if (_ph != null && e.classePh != _ph) return false;
+      if (q.isEmpty) return true;
+      return e.nomeComum.toLowerCase().contains(q) ||
+          e.nomeCientifico.toLowerCase().contains(q);
+    }).toList();
   }
 
   @override
@@ -138,22 +132,27 @@ class _EspeciesPageState extends State<EspeciesPage> {
               ),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('Todos'),
-                  selected: _grupo == null,
-                  onSelected: (_) => _escolherGrupo(null),
-                ),
-                for (final g in _grupos)
-                  ChoiceChip(
-                    label: Text(g),
-                    selected: _grupo == g,
-                    onSelected: (_) => _escolherGrupo(g),
-                  ),
+            _LinhaFiltro(
+              rotulo: 'Temperatura',
+              todos: 'Todas',
+              opcoes: const [
+                ('Água Fria', 'Água Fria (até 25 °C)'),
+                ('Água Tropical', 'Água Tropical (acima de 25 °C)'),
               ],
+              selecionado: _termica,
+              onSelecionar: (v) => setState(() => _termica = v),
+            ),
+            const SizedBox(height: 8),
+            _LinhaFiltro(
+              rotulo: 'pH',
+              todos: 'Todos',
+              opcoes: const [
+                ('Ácido', 'Ácido (até 6,50)'),
+                ('Neutro', 'Neutro'),
+                ('Alcalino', 'Alcalino (a partir de 7,00)'),
+              ],
+              selecionado: _ph,
+              onSelecionar: (v) => setState(() => _ph = v),
             ),
             const SizedBox(height: 18),
             Expanded(child: _conteudo()),
@@ -262,11 +261,30 @@ class _EspecieCard extends StatelessWidget {
                 if (emUso)
                   const _Tag('Em uso',
                       fundo: AppColors.okFundo, cor: AppColors.okTexto),
-                if (especie.grupoHidroquimico != null)
-                  _Tag(especie.grupoHidroquimico!,
-                      fundo: AppColors.primariaClara,
-                      cor: AppColors.primariaEscura),
-                const _Tag('Água doce'),
+                if (especie.classeTermica != null)
+                  _Tag(
+                    especie.classeTermica!,
+                    fundo: especie.classeTermica == 'Água Fria'
+                        ? const Color(0xFFE3F0FA)
+                        : const Color(0xFFFDEBD8),
+                    cor: especie.classeTermica == 'Água Fria'
+                        ? const Color(0xFF1F5F8B)
+                        : const Color(0xFF9A5A12),
+                  ),
+                if (especie.classePh != null)
+                  _Tag(
+                    'pH ${especie.classePh}',
+                    fundo: especie.classePh == 'Ácido'
+                        ? const Color(0xFFF3E8FA)
+                        : especie.classePh == 'Alcalino'
+                            ? const Color(0xFFE0F2EE)
+                            : AppColors.primariaClara,
+                    cor: especie.classePh == 'Ácido'
+                        ? const Color(0xFF6B3A8C)
+                        : especie.classePh == 'Alcalino'
+                            ? const Color(0xFF1B6B5A)
+                            : AppColors.primariaEscura,
+                  ),
               ],
             ),
             const Spacer(),
@@ -335,6 +353,61 @@ class _Fato extends StatelessWidget {
           Text(valor, style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
+    );
+  }
+}
+
+// Uma linha de filtro: rótulo + "Todos" + as opções do relatório.
+class _LinhaFiltro extends StatelessWidget {
+  const _LinhaFiltro({
+    required this.rotulo,
+    required this.todos,
+    required this.opcoes,
+    required this.selecionado,
+    required this.onSelecionar,
+  });
+
+  final String rotulo;
+  final String todos;
+  final List<(String, String)> opcoes; // (valor, texto exibido)
+  final String? selecionado;
+  final ValueChanged<String?> onSelecionar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            rotulo,
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.textoSecundario,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              ChoiceChip(
+                label: Text(todos),
+                selected: selecionado == null,
+                onSelected: (_) => onSelecionar(null),
+              ),
+              for (final (valor, texto) in opcoes)
+                ChoiceChip(
+                  label: Text(texto),
+                  selected: selecionado == valor,
+                  onSelected: (_) => onSelecionar(valor),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
