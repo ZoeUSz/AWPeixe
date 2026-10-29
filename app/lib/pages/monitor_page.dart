@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../config.dart';
 import '../formatacao.dart';
+import '../models/alimentacao.dart';
 import '../models/status_tanque.dart';
 import '../theme.dart';
 import 'alertas_page.dart';
+import 'alimentacao_page.dart';
 import 'especies_page.dart';
 import 'historico_page.dart';
 
@@ -24,6 +26,8 @@ class _MonitorPageState extends State<MonitorPage> {
   String? _erro;
   bool _buscando = false;
   int _alertasAbertos = 0;
+  Alimentacao? _ultimaAlimentacao;
+  bool _alimentacaoCarregada = false;
   Timer? _timer;
 
   @override
@@ -45,10 +49,16 @@ class _MonitorPageState extends State<MonitorPage> {
     try {
       final status = await _api.fetchStatus(tanqueId);
       final abertos = await _contarAlertasAbertos();
+      final alimentacoes = await _buscarAlimentacoes();
       if (!mounted) return;
       setState(() {
         _status = status;
         _alertasAbertos = abertos ?? _alertasAbertos;
+        if (alimentacoes != null) {
+          _alimentacaoCarregada = true;
+          _ultimaAlimentacao =
+              alimentacoes.isEmpty ? null : alimentacoes.first;
+        }
         _erro = null;
       });
     } on ApiException catch (e) {
@@ -67,6 +77,21 @@ class _MonitorPageState extends State<MonitorPage> {
     } on ApiException {
       return null;
     }
+  }
+
+  // Alimentações mais recentes (null se não deu para consultar).
+  Future<List<Alimentacao>?> _buscarAlimentacoes() async {
+    try {
+      return await _api.fetchAlimentacoes(tanqueId, limite: 1);
+    } on ApiException {
+      return null;
+    }
+  }
+
+  void _abrirAlimentacao() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const AlimentacaoPage()),
+    );
   }
 
   Future<void> _escolherEspecie() async {
@@ -110,6 +135,12 @@ class _MonitorPageState extends State<MonitorPage> {
               ),
             ),
             label: const Text('Alertas'),
+          ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: _abrirAlimentacao,
+            icon: const Icon(Icons.restaurant),
+            label: const Text('Alimentação'),
           ),
           const SizedBox(width: 8),
           TextButton.icon(
@@ -182,6 +213,11 @@ class _MonitorPageState extends State<MonitorPage> {
                     SizedBox(width: 520, child: _ParametroCard(ph)),
                 ],
               ),
+              if (_alimentacaoCarregada) ...[
+                const SizedBox(height: 16),
+                _AlimentacaoCard(
+                    ultima: _ultimaAlimentacao, onAbrir: _abrirAlimentacao),
+              ],
             ],
           ),
         ),
@@ -708,6 +744,50 @@ class _Medidor extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+// Última vez em que o dispenser soltou comida.
+class _AlimentacaoCard extends StatelessWidget {
+  const _AlimentacaoCard({required this.ultima, required this.onAbrir});
+
+  final Alimentacao? ultima;
+  final VoidCallback onAbrir;
+
+  @override
+  Widget build(BuildContext context) {
+    final a = ultima;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 1056),
+      child: SizedBox(
+        width: double.infinity,
+        child: Card(
+        elevation: 0,
+        color: Colors.white,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: AppColors.borda),
+        ),
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          leading: const Icon(Icons.restaurant, color: AppColors.primaria),
+          title: Text(
+            a == null
+                ? 'Nenhuma alimentação registrada'
+                : 'Última alimentação: ${a.quando}',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          subtitle: a == null
+              ? null
+              : Text(a.detalhe),
+          trailing:
+              TextButton(onPressed: onAbrir, child: const Text('Ver todas')),
+        ),
+      ),
+      ),
     );
   }
 }

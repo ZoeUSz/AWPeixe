@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'config.dart';
 import 'models/alerta.dart';
+import 'models/alimentacao.dart';
 import 'models/especie.dart';
 import 'models/historico.dart';
 import 'models/status_tanque.dart';
@@ -117,6 +118,21 @@ class ApiClient {
     final saida = <Alerta>[];
     for (final item in dados) {
       final a = Alerta.tentar(item as Map<String, dynamic>);
+      if (a != null) saida.add(a);
+    }
+    return saida;
+  }
+
+  Future<List<Alimentacao>> fetchAlimentacoes(String tanqueId,
+      {int limite = 30}) async {
+    final dados = await _enviar(
+      'GET',
+      '/tanques/$tanqueId/alimentacoes',
+      query: {'limite': '$limite'},
+    ) as List<dynamic>;
+    final saida = <Alimentacao>[];
+    for (final item in dados) {
+      final a = Alimentacao.tentar(item as Map<String, dynamic>);
       if (a != null) saida.add(a);
     }
     return saida;
