@@ -138,8 +138,8 @@ class _EspeciesPageState extends State<EspeciesPage> {
           style: TextStyle(color: AppColors.textoSecundario),
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          width: 360,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 360),
           child: TextField(
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.search),

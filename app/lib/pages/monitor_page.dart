@@ -116,40 +116,61 @@ class _MonitorPageState extends State<MonitorPage> {
   @override
   Widget build(BuildContext context) {
     final conectado = _erro == null && _status != null;
+    // Em tela estreita (celular) os botões viram só ícones.
+    final estreito = MediaQuery.sizeOf(context).width < 720;
+    final iconeAlertas = Badge(
+      isLabelVisible: _alertasAbertos > 0,
+      backgroundColor: AppColors.alerta,
+      textColor: Colors.white,
+      label: Text('$_alertasAbertos'),
+      child: Icon(
+        _alertasAbertos > 0
+            ? Icons.notifications_active
+            : Icons.notifications_none,
+      ),
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text('AquaMonitor',
             style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
-          TextButton.icon(
-            onPressed: _abrirAlertas,
-            icon: Badge(
-              isLabelVisible: _alertasAbertos > 0,
-              backgroundColor: AppColors.alerta,
-              textColor: Colors.white,
-              label: Text('$_alertasAbertos'),
-              child: Icon(
-                _alertasAbertos > 0
-                    ? Icons.notifications_active
-                    : Icons.notifications_none,
-              ),
+          if (estreito) ...[
+            IconButton(
+              tooltip: 'Alertas',
+              onPressed: _abrirAlertas,
+              icon: iconeAlertas,
             ),
-            label: const Text('Alertas'),
-          ),
-          const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: _abrirAlimentacao,
-            icon: const Icon(Icons.restaurant),
-            label: const Text('Alimentação'),
-          ),
-          const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: _abrirHistorico,
-            icon: const Icon(Icons.show_chart),
-            label: const Text('Histórico'),
-          ),
-          const SizedBox(width: 16),
-          _Conexao(conectado: conectado),
+            IconButton(
+              tooltip: 'Alimentação',
+              onPressed: _abrirAlimentacao,
+              icon: const Icon(Icons.restaurant),
+            ),
+            IconButton(
+              tooltip: 'Histórico',
+              onPressed: _abrirHistorico,
+              icon: const Icon(Icons.show_chart),
+            ),
+          ] else ...[
+            TextButton.icon(
+              onPressed: _abrirAlertas,
+              icon: iconeAlertas,
+              label: const Text('Alertas'),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _abrirAlimentacao,
+              icon: const Icon(Icons.restaurant),
+              label: const Text('Alimentação'),
+            ),
+            const SizedBox(width: 8),
+            TextButton.icon(
+              onPressed: _abrirHistorico,
+              icon: const Icon(Icons.show_chart),
+              label: const Text('Histórico'),
+            ),
+            const SizedBox(width: 16),
+          ],
+          _Conexao(conectado: conectado, compacto: estreito),
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
@@ -185,6 +206,9 @@ class _MonitorPageState extends State<MonitorPage> {
 
     final temperatura = status.parametro('TEMPERATURA');
     final ph = status.parametro('PH');
+    // Largura dos cards: 520 no desktop, a largura da tela no celular.
+    final larguraCard =
+        (MediaQuery.sizeOf(context).width - 48).clamp(0.0, 520.0).toDouble();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -208,9 +232,9 @@ class _MonitorPageState extends State<MonitorPage> {
                 runSpacing: 16,
                 children: [
                   if (temperatura != null)
-                    SizedBox(width: 520, child: _ParametroCard(temperatura)),
+                    SizedBox(width: larguraCard, child: _ParametroCard(temperatura)),
                   if (ph != null)
-                    SizedBox(width: 520, child: _ParametroCard(ph)),
+                    SizedBox(width: larguraCard, child: _ParametroCard(ph)),
                 ],
               ),
               if (_alimentacaoCarregada) ...[
@@ -227,12 +251,30 @@ class _MonitorPageState extends State<MonitorPage> {
 }
 
 class _Conexao extends StatelessWidget {
-  const _Conexao({required this.conectado});
+  const _Conexao({required this.conectado, this.compacto = false});
 
   final bool conectado;
+  final bool compacto; // só a bolinha, sem texto (celular)
 
   @override
   Widget build(BuildContext context) {
+    final texto = conectado ? 'Sistema conectado' : 'Sem conexão com a API';
+    if (compacto) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 16, left: 4),
+        child: Tooltip(
+          message: texto,
+          child: Container(
+            width: 11,
+            height: 11,
+            decoration: BoxDecoration(
+              color: conectado ? AppColors.ok : AppColors.alerta,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(right: 24),
       child: Row(
@@ -248,7 +290,7 @@ class _Conexao extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            conectado ? 'Sistema conectado' : 'Sem conexão com a API',
+            texto,
             style: TextStyle(
               fontSize: 13,
               color: conectado ? AppColors.okTexto : AppColors.alertaTexto,
@@ -269,66 +311,76 @@ class _Cabecalho extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final temEspecie = status.especie != null;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    final estreito = MediaQuery.sizeOf(context).width < 720;
+
+    final titulo = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'VISÃO GERAL',
-                style: TextStyle(
-                  fontSize: 12,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaria,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                status.tanque,
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ],
+        const Text(
+          'VISÃO GERAL',
+          style: TextStyle(
+            fontSize: 12,
+            letterSpacing: 1.2,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaria,
           ),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.borda),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.set_meal, color: AppColors.primaria),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Espécie atual',
-                      style: TextStyle(
-                          fontSize: 12, color: AppColors.textoSecundario)),
-                  Text(
-                    status.especie ?? 'Nenhuma',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              OutlinedButton(
-                onPressed: onEscolher,
-                child: Text(temEspecie ? 'Trocar espécie' : 'Escolher espécie'),
-              ),
-            ],
-          ),
+        const SizedBox(height: 4),
+        Text(
+          status.tanque,
+          style: Theme.of(context)
+              .textTheme
+              .headlineMedium
+              ?.copyWith(fontWeight: FontWeight.w700),
         ),
       ],
+    );
+
+    final textos = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Espécie atual',
+            style: TextStyle(fontSize: 12, color: AppColors.textoSecundario)),
+        Text(
+          status.especie ?? 'Nenhuma',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+      ],
+    );
+
+    final botao = OutlinedButton(
+      onPressed: onEscolher,
+      child: Text(temEspecie ? 'Trocar espécie' : 'Escolher espécie'),
+    );
+
+    final caixa = Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borda),
+      ),
+      child: Row(
+        mainAxisSize: estreito ? MainAxisSize.max : MainAxisSize.min,
+        children: [
+          const Icon(Icons.set_meal, color: AppColors.primaria),
+          const SizedBox(width: 10),
+          if (estreito) Expanded(child: textos) else textos,
+          const SizedBox(width: 16),
+          botao,
+        ],
+      ),
+    );
+
+    if (estreito) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [titulo, const SizedBox(height: 14), caixa],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [Expanded(child: titulo), caixa],
     );
   }
 }

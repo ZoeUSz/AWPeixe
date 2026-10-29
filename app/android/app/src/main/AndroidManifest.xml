@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Acesso à internet (a API roda no notebook, na rede local). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="aquamonitor"
+        android:label="AquaMonitor"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

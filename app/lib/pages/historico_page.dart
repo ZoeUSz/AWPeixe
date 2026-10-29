@@ -117,25 +117,25 @@ class _HistoricoPageState extends State<HistoricoPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              // Em tela estreita os botões descem para a linha de baixo.
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Expanded(
-                    child: Text(
-                      _status?.especie == null
-                          ? 'Sem espécie selecionada'
-                          : 'Faixa ideal de ${_status!.especie}',
-                      style: const TextStyle(
-                          fontSize: 16, color: AppColors.textoSecundario),
-                    ),
+                  Text(
+                    _status?.especie == null
+                        ? 'Sem espécie selecionada'
+                        : 'Faixa ideal de ${_status!.especie}',
+                    style: const TextStyle(
+                        fontSize: 16, color: AppColors.textoSecundario),
                   ),
-                  for (final n in _opcoesPontos) ...[
-                    const SizedBox(width: 8),
+                  for (final n in _opcoesPontos)
                     ChoiceChip(
                       label: Text('Últimas $n'),
                       selected: _pontos == n,
                       onSelected: (_) => _mudarPontos(n),
                     ),
-                  ],
                 ],
               ),
               if (_erro != null) ...[
