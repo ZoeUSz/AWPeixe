@@ -167,16 +167,21 @@ class _Corrigir extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.zero,
-        childrenPadding: const EdgeInsets.only(bottom: 8),
-        title: Text(titulo,
-            style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(acima ? 'Como baixar o pH' : 'Como subir o pH'),
-        expandedCrossAxisAlignment: CrossAxisAlignment.start,
-        children: [PassosPh(acima: acima)],
+    // O Material evita o aviso de "ink splashes invisíveis" do ListTile, que
+    // está dentro de uma caixa com cor de fundo (_Secao).
+    return Material(
+      type: MaterialType.transparency,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          title: Text(titulo,
+              style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: Text(acima ? 'Como baixar o pH' : 'Como subir o pH'),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          children: [PassosPh(acima: acima)],
+        ),
       ),
     );
   }
