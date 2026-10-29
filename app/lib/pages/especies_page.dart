@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../api.dart';
 import '../config.dart';
+import '../fotos.dart';
 import '../models/especie.dart';
 import '../theme.dart';
+import 'creditos_page.dart';
 
 class EspeciesPage extends StatefulWidget {
   const EspeciesPage({super.key});
@@ -94,117 +96,158 @@ class _EspeciesPageState extends State<EspeciesPage> {
       appBar: AppBar(
         title: const Text('AquaMonitor',
             style: TextStyle(fontWeight: FontWeight.w700)),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'Créditos das imagens',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CreditosPage()),
+            ),
+          ),
+        ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
           child: Divider(height: 1, color: AppColors.borda),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Escolher espécie',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineMedium
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 4),
-            const Text(
-              'Selecione a espécie para comparar as leituras com suas faixas ideais.',
-              style: TextStyle(color: AppColors.textoSecundario),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: 360,
-              child: TextField(
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.search),
-                  hintText: 'Buscar por nome',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: AppColors.borda),
-                  ),
-                ),
-                onChanged: (v) => setState(() => _busca = v),
-              ),
-            ),
-            const SizedBox(height: 14),
-            _LinhaFiltro(
-              rotulo: 'Temperatura',
-              todos: 'Todas',
-              opcoes: const [
-                ('Água Fria', 'Água Fria (até 25 °C)'),
-                ('Água Tropical', 'Água Tropical (acima de 25 °C)'),
-              ],
-              selecionado: _termica,
-              onSelecionar: (v) => setState(() => _termica = v),
-            ),
-            const SizedBox(height: 8),
-            _LinhaFiltro(
-              rotulo: 'pH',
-              todos: 'Todos',
-              opcoes: const [
-                ('Ácido', 'Ácido (até 6,50)'),
-                ('Neutro', 'Neutro'),
-                ('Alcalino', 'Alcalino (a partir de 7,00)'),
-              ],
-              selecionado: _ph,
-              onSelecionar: (v) => setState(() => _ph = v),
-            ),
-            const SizedBox(height: 18),
-            Expanded(child: _conteudo()),
-          ],
-        ),
+      // A página inteira rola junto: título, busca e filtros sobem com os cards.
+      body: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+            sliver: SliverToBoxAdapter(child: _cabecalho(context)),
+          ),
+          ..._lista(),
+        ],
       ),
     );
   }
 
-  Widget _conteudo() {
+  Widget _cabecalho(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Escolher espécie',
+            style: Theme.of(context)
+                .textTheme
+                .headlineMedium
+                ?.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        const Text(
+          'Selecione a espécie para comparar as leituras com suas faixas ideais.',
+          style: TextStyle(color: AppColors.textoSecundario),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: 360,
+          child: TextField(
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search),
+              hintText: 'Buscar por nome',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppColors.borda),
+              ),
+            ),
+            onChanged: (v) => setState(() => _busca = v),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _LinhaFiltro(
+          rotulo: 'Temperatura',
+          todos: 'Todas',
+          opcoes: const [
+            ('Água Fria', 'Água Fria (até 25 °C)'),
+            ('Água Tropical', 'Água Tropical (acima de 25 °C)'),
+          ],
+          selecionado: _termica,
+          onSelecionar: (v) => setState(() => _termica = v),
+        ),
+        const SizedBox(height: 8),
+        _LinhaFiltro(
+          rotulo: 'pH',
+          todos: 'Todos',
+          opcoes: const [
+            ('Ácido', 'Ácido (até 6,50)'),
+            ('Neutro', 'Neutro'),
+            ('Alcalino', 'Alcalino (a partir de 7,00)'),
+          ],
+          selecionado: _ph,
+          onSelecionar: (v) => setState(() => _ph = v),
+        ),
+        const SizedBox(height: 18),
+      ],
+    );
+  }
+
+  // Parte de baixo da página: carregando, erro, lista vazia ou a grade de cards.
+  List<Widget> _lista() {
     if (_carregando) {
-      return const Center(child: CircularProgressIndicator());
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
     }
     if (_erro != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, size: 40, color: AppColors.neutro),
-            const SizedBox(height: 10),
-            Text(_erro!, textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: _carregar,
-              child: const Text('Tentar de novo'),
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off, size: 40, color: AppColors.neutro),
+                const SizedBox(height: 10),
+                Text(_erro!, textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: _carregar,
+                  child: const Text('Tentar de novo'),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      );
+      ];
     }
     final lista = _filtradas;
     if (lista.isEmpty) {
-      return const Center(child: Text('Nenhuma espécie encontrada.'));
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: Text('Nenhuma espécie encontrada.')),
+        ),
+      ];
     }
-    return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 340,
-        mainAxisExtent: 272,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 340,
+            mainAxisExtent: 392,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, i) {
+              final e = lista[i];
+              return _EspecieCard(
+                e,
+                emUso: e.id == _especieEmUsoId,
+                selecionando: e.id == _selecionandoId,
+                onSelecionar: () => _selecionar(e),
+              );
+            },
+            childCount: lista.length,
+          ),
+        ),
       ),
-      itemCount: lista.length,
-      itemBuilder: (context, i) {
-        final e = lista[i];
-        return _EspecieCard(
-          e,
-          emUso: e.id == _especieEmUsoId,
-          selecionando: e.id == _selecionandoId,
-          onSelecionar: () => _selecionar(e),
-        );
-      },
-    );
+    ];
   }
 }
 
@@ -227,6 +270,7 @@ class _EspecieCard extends StatelessWidget {
       elevation: 0,
       color: Colors.white,
       margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
@@ -234,9 +278,26 @@ class _EspecieCard extends StatelessWidget {
           width: emUso ? 2 : 1,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FotoEspecie(
+            nomeCientifico: especie.nomeCientifico,
+            nomeComum: especie.nomeComum,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: _corpo(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _corpo(BuildContext context) {
+    return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -305,8 +366,6 @@ class _EspecieCard extends StatelessWidget {
                     ),
             ),
           ],
-        ),
-      ),
     );
   }
 }
