@@ -6,6 +6,7 @@ import '../fotos.dart';
 import '../models/especie.dart';
 import '../theme.dart';
 import 'creditos_page.dart';
+import 'especie_detalhe_page.dart';
 
 class EspeciesPage extends StatefulWidget {
   const EspeciesPage({super.key});
@@ -94,7 +95,7 @@ class _EspeciesPageState extends State<EspeciesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AquaMonitor',
+        title: const Text('AWPeixe',
             style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
           IconButton(
@@ -241,6 +242,10 @@ class _EspeciesPageState extends State<EspeciesPage> {
                 emUso: e.id == _especieEmUsoId,
                 selecionando: e.id == _selecionandoId,
                 onSelecionar: () => _selecionar(e),
+                onDetalhes: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => EspecieDetalhePage(especie: e)),
+                ),
               );
             },
             childCount: lista.length,
@@ -257,12 +262,14 @@ class _EspecieCard extends StatelessWidget {
     required this.emUso,
     required this.selecionando,
     required this.onSelecionar,
+    required this.onDetalhes,
   });
 
   final Especie especie;
   final bool emUso;
   final bool selecionando;
   final VoidCallback onSelecionar;
+  final VoidCallback onDetalhes;
 
   @override
   Widget build(BuildContext context) {
@@ -353,17 +360,26 @@ class _EspecieCard extends StatelessWidget {
             _Fato('Temperatura', especie.faixaTemp),
             _Fato('Tanque mínimo', especie.tanqueMinimo),
             const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              child: emUso
-                  ? const OutlinedButton(
-                      onPressed: null,
-                      child: Text('Espécie selecionada'),
-                    )
-                  : FilledButton(
-                      onPressed: selecionando ? null : onSelecionar,
-                      child: Text(selecionando ? 'Selecionando...' : 'Selecionar'),
-                    ),
+            Row(
+              children: [
+                OutlinedButton(
+                  onPressed: onDetalhes,
+                  child: const Text('Detalhes'),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: emUso
+                      ? const OutlinedButton(
+                          onPressed: null,
+                          child: Text('Em uso'),
+                        )
+                      : FilledButton(
+                          onPressed: selecionando ? null : onSelecionar,
+                          child: Text(
+                              selecionando ? 'Selecionando...' : 'Selecionar'),
+                        ),
+                ),
+              ],
             ),
           ],
     );

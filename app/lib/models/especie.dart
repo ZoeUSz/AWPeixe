@@ -11,6 +11,15 @@ String _fmt(double v) {
   return v.toStringAsFixed(casas).replaceAll('.', ',');
 }
 
+// 7 -> "7", 3.5 -> "3,5", 18.6 -> "18,6"
+String _fmtNum(double v) => v == v.roundToDouble()
+    ? v.round().toString()
+    : v.toStringAsFixed(1).replaceAll('.', ',');
+
+// Pesos a partir de 1000 g aparecem em kg: 1598.6 -> "1,6 kg".
+String _fmtPeso(double g) =>
+    g >= 1000 ? '${_fmtNum(g / 1000)} kg' : '${_fmtNum(g)} g';
+
 class Especie {
   Especie({
     required this.id,
@@ -22,6 +31,12 @@ class Especie {
     this.tempMin,
     this.tempMax,
     this.tanqueMinimoLitros,
+    this.temperamento,
+    this.comprimentoMinCm,
+    this.comprimentoMaxCm,
+    this.tipoComprimento,
+    this.pesoMinG,
+    this.pesoMaxG,
   });
 
   final String id;
@@ -33,6 +48,12 @@ class Especie {
   final double? tempMin;
   final double? tempMax;
   final double? tanqueMinimoLitros;
+  final String? temperamento;
+  final double? comprimentoMinCm;
+  final double? comprimentoMaxCm;
+  final String? tipoComprimento; // 'padrão' ou 'total'
+  final double? pesoMinG;
+  final double? pesoMaxG;
 
   factory Especie.fromJson(Map<String, dynamic> j) => Especie(
         id: j['id'] as String,
@@ -44,6 +65,12 @@ class Especie {
         tempMin: _num(j['tempMin']),
         tempMax: _num(j['tempMax']),
         tanqueMinimoLitros: _num(j['tamanhoMinimoTanqueLitros']),
+        temperamento: j['temperamento'] as String?,
+        comprimentoMinCm: _num(j['comprimentoMinCm']),
+        comprimentoMaxCm: _num(j['comprimentoMaxCm']),
+        tipoComprimento: j['tipoComprimento'] as String?,
+        pesoMinG: _num(j['pesoMinG']),
+        pesoMaxG: _num(j['pesoMaxG']),
       );
 
   String get faixaPh => (phMin == null || phMax == null)
@@ -73,4 +100,26 @@ class Especie {
   String get tanqueMinimo => tanqueMinimoLitros == null
       ? '—'
       : '${tanqueMinimoLitros!.round()} L';
+
+  String get tamanhoAdulto {
+    final tipo = tipoComprimento == null ? '' : ' ($tipoComprimento)';
+    if (comprimentoMaxCm == null) return 'não informado';
+    if (comprimentoMinCm != null) {
+      return '${_fmtNum(comprimentoMinCm!)} a ${_fmtNum(comprimentoMaxCm!)} cm$tipo';
+    }
+    return 'até ${_fmtNum(comprimentoMaxCm!)} cm$tipo';
+  }
+
+  String get pesoAdulto {
+    if (pesoMaxG == null) return 'não informado';
+    if (pesoMinG != null) {
+      return '${_fmtPeso(pesoMinG!)} a ${_fmtPeso(pesoMaxG!)}';
+    }
+    return 'até ${_fmtPeso(pesoMaxG!)}';
+  }
+
+  String get temperamentoTexto =>
+      (temperamento == null || temperamento!.trim().isEmpty)
+          ? 'não informado'
+          : temperamento!;
 }

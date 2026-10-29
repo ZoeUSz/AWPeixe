@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../config.dart';
 import '../models/alerta.dart';
+import '../orientacao_ph.dart';
 import '../theme.dart';
 
 class AlertasPage extends StatefulWidget {
@@ -275,6 +276,23 @@ class _AlertaCard extends StatelessWidget {
                   if (a.acao != null) ...[
                     const SizedBox(height: 8),
                     _Acao(alerta: a, destaque: aberto),
+                  ],
+                  if (aberto && a.tipo.startsWith('PH')) ...[
+                    const SizedBox(height: 4),
+                    Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        childrenPadding: const EdgeInsets.only(bottom: 8),
+                        dense: true,
+                        title: const Text('Como corrigir',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700)),
+                        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+                        children: [PassosPh(acima: a.tipo == 'PH_ACIMA')],
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 6),
                   Text(

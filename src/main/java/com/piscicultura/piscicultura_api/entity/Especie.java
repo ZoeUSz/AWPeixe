@@ -52,6 +52,18 @@ public class Especie {
     @Column(columnDefinition = "TEXT")
     private String distribuicao;
 
+    @Column(name = "comprimento_min_cm", precision = 6, scale = 2)
+    private BigDecimal comprimentoMinCm;
+
+    @Column(name = "tipo_comprimento", length = 10)
+    private String tipoComprimento;
+
+    @Column(name = "peso_min_g", precision = 8, scale = 2)
+    private BigDecimal pesoMinG;
+
+    @Column(length = 300)
+    private String temperamento;
+
     @Column(name = "comprimento_max_cm", precision = 6, scale = 2)
     private BigDecimal comprimentoMaxCm;
 
