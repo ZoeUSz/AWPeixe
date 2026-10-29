@@ -2,7 +2,7 @@
     <!-- Acesso à internet (a API roda no notebook, na rede local). -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="AquaMonitor"
+        android:label="AWPeixe"
         android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

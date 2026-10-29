@@ -131,7 +131,7 @@ class _MonitorPageState extends State<MonitorPage> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AquaMonitor',
+        title: const Text('AWPeixe',
             style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
           if (estreito) ...[

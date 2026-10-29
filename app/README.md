@@ -1,4 +1,4 @@
-# AquaMonitor (aplicativo Flutter)
+# AWPeixe (aplicativo Flutter)
 
 Aplicativo do TCC de monitoramento de aquário. Ele consulta a API Spring Boot
 e mostra se a temperatura e o pH da água estão dentro da faixa ideal da espécie
