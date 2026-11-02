@@ -12,6 +12,7 @@ import 'alertas_page.dart';
 import 'alimentacao_page.dart';
 import 'especies_page.dart';
 import 'historico_page.dart';
+import 'login_page.dart';
 
 class MonitorPage extends StatefulWidget {
   const MonitorPage({super.key});
@@ -63,10 +64,39 @@ class _MonitorPageState extends State<MonitorPage> {
       });
     } on ApiException catch (e) {
       if (!mounted) return;
+      // Senha recusada no meio do uso (ex.: trocada na API): volta ao login.
+      if (e.naoAutorizado) {
+        _timer?.cancel();
+        sairDaSessao(context);
+        return;
+      }
       setState(() => _erro = e.mensagem);
     } finally {
       _buscando = false;
     }
+  }
+
+  Future<void> _sair() async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sair do AWPeixe?'),
+        content: const Text('Você vai precisar entrar de novo com usuário e senha.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Sair'),
+          ),
+        ],
+      ),
+    );
+    if (confirmou != true || !mounted) return;
+    _timer?.cancel();
+    sairDaSessao(context);
   }
 
   // Quantos alertas estão em andamento (null se não deu para consultar).
@@ -171,6 +201,12 @@ class _MonitorPageState extends State<MonitorPage> {
             const SizedBox(width: 16),
           ],
           _Conexao(conectado: conectado, compacto: estreito),
+          IconButton(
+            tooltip: 'Sair',
+            onPressed: _sair,
+            icon: const Icon(Icons.logout),
+          ),
+          const SizedBox(width: 8),
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),

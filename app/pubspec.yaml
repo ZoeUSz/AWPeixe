@@ -36,3 +36,4 @@ flutter:
   # Fotos das espécies (arquivos em app/assets/especies/)
   assets:
     - assets/especies/
+    - assets/icone/

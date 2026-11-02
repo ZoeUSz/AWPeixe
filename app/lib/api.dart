@@ -9,10 +9,14 @@ import 'models/especie.dart';
 import 'models/historico.dart';
 import 'models/status_tanque.dart';
 import 'models/tanque.dart';
+import 'sessao.dart';
 
 class ApiException implements Exception {
-  ApiException(this.mensagem);
+  ApiException(this.mensagem, {this.naoAutorizado = false});
   final String mensagem;
+
+  // true quando a API respondeu 401 (usuário ou senha errados).
+  final bool naoAutorizado;
 
   @override
   String toString() => mensagem;
@@ -23,21 +27,26 @@ class ApiClient {
 
   final http.Client _client;
 
-  Map<String, String> get _headers => {
+  Map<String, String> _headers(String usuario, String senha) => {
         'Authorization':
-            'Basic ${base64Encode(utf8.encode('$apiUser:$apiPass'))}',
+            'Basic ${base64Encode(utf8.encode('$usuario:$senha'))}',
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       };
 
+  // Por padrão usa as credenciais da sessão; o login passa as digitadas.
   Future<dynamic> _enviar(
     String metodo,
     String caminho, {
     Map<String, String>? query,
     Object? corpo,
+    String? usuario,
+    String? senha,
   }) async {
     final uri = Uri.parse('$apiBaseUrl$caminho').replace(queryParameters: query);
-    final req = http.Request(metodo, uri)..headers.addAll(_headers);
+    final req = http.Request(metodo, uri)
+      ..headers.addAll(
+          _headers(usuario ?? Sessao.usuario, senha ?? Sessao.senha));
     if (corpo != null) req.body = jsonEncode(corpo);
 
     http.Response resp;
@@ -50,7 +59,7 @@ class ApiClient {
     }
 
     if (resp.statusCode == 401) {
-      throw ApiException('Usuário ou senha da API incorretos (401)');
+      throw ApiException('Usuário ou senha incorretos', naoAutorizado: true);
     }
     if (resp.statusCode == 404) {
       throw ApiException('Item não encontrado na API (404)');
@@ -59,6 +68,14 @@ class ApiClient {
       throw ApiException('Erro da API (${resp.statusCode})');
     }
     return jsonDecode(utf8.decode(resp.bodyBytes));
+  }
+
+  // Confere o usuário e a senha numa rota protegida e, se a API aceitar,
+  // abre a sessão. Lança ApiException se a senha estiver errada ou se a
+  // API estiver fora do ar.
+  Future<void> entrar(String usuario, String senha) async {
+    await _enviar('GET', '/especies/grupos', usuario: usuario, senha: senha);
+    Sessao.iniciar(usuario, senha);
   }
 
   Future<List<Especie>> fetchEspecies({String? grupo}) async {

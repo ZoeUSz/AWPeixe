@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'pages/monitor_page.dart';
+import 'pages/login_page.dart';
 import 'theme.dart';
 
 void main() => runApp(const AWPeixeApp());
@@ -14,7 +14,7 @@ class AWPeixeApp extends StatelessWidget {
       title: 'AWPeixe',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
-      home: const MonitorPage(),
+      home: const LoginPage(),
     );
   }
 }
