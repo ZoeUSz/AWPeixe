@@ -12,5 +12,22 @@ services:
     volumes:
       - piscicultura_data:/var/lib/postgresql/data
 
+  # BI: Metabase em http://localhost:3000
+  # No Metabase, o host do banco é "postgres" (o nome do serviço acima), porta 5432.
+  metabase:
+    image: metabase/metabase:latest
+    container_name: piscicultura-bi
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      MB_DB_FILE: /metabase-data/metabase.db
+      JAVA_TIMEZONE: America/Sao_Paulo
+    ports:
+      - "3000:3000"
+    volumes:
+      - metabase_data:/metabase-data
+
 volumes:
   piscicultura_data:
+  metabase_data:
