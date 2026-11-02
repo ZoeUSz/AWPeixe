@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'notificacoes.dart';
 import 'pages/login_page.dart';
 import 'theme.dart';
 
-void main() => runApp(const AWPeixeApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Notificacoes.iniciar();
+  runApp(const AWPeixeApp());
+}
 
 class AWPeixeApp extends StatelessWidget {
   const AWPeixeApp({super.key});

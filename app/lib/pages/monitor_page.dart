@@ -6,6 +6,7 @@ import '../api.dart';
 import '../config.dart';
 import '../formatacao.dart';
 import '../models/alimentacao.dart';
+import '../notificacoes.dart';
 import '../models/status_tanque.dart';
 import '../theme.dart';
 import 'alertas_page.dart';
@@ -31,9 +32,17 @@ class _MonitorPageState extends State<MonitorPage> {
   bool _alimentacaoCarregada = false;
   Timer? _timer;
 
+  // Para notificar só o que é novo: na primeira consulta, os alertas e a
+  // alimentação que já existiam são só registrados, sem notificação.
+  final Set<String> _alertasNotificados = {};
+  bool _alertasIniciados = false;
+  String? _ultimaAlimentacaoId;
+  bool _alimentacaoIniciada = false;
+
   @override
   void initState() {
     super.initState();
+    Notificacoes.pedirPermissao();
     _atualizar();
     _timer = Timer.periodic(const Duration(seconds: 3), (_) => _atualizar());
   }
@@ -100,19 +109,37 @@ class _MonitorPageState extends State<MonitorPage> {
   }
 
   // Quantos alertas estão em andamento (null se não deu para consultar).
+  // Também notifica cada alerta novo que abriu desde a última consulta.
   Future<int?> _contarAlertasAbertos() async {
     try {
       final alertas = await _api.fetchAlertas(tanqueId);
-      return alertas.where((a) => !a.resolvido).length;
+      final abertos = alertas.where((a) => !a.resolvido).toList();
+      for (final a in abertos) {
+        if (_alertasNotificados.add(a.id) && _alertasIniciados) {
+          Notificacoes.alerta(a);
+        }
+      }
+      _alertasIniciados = true;
+      return abertos.length;
     } on ApiException {
       return null;
     }
   }
 
   // Alimentações mais recentes (null se não deu para consultar).
+  // Também notifica quando aparece uma alimentação nova.
   Future<List<Alimentacao>?> _buscarAlimentacoes() async {
     try {
-      return await _api.fetchAlimentacoes(tanqueId, limite: 1);
+      final lista = await _api.fetchAlimentacoes(tanqueId, limite: 1);
+      if (lista.isNotEmpty) {
+        final ultima = lista.first;
+        if (_alimentacaoIniciada && ultima.id != _ultimaAlimentacaoId) {
+          Notificacoes.alimentacao(ultima);
+        }
+        _ultimaAlimentacaoId = ultima.id;
+      }
+      _alimentacaoIniciada = true;
+      return lista;
     } on ApiException {
       return null;
     }
