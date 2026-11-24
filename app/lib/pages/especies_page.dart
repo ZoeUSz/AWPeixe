@@ -7,9 +7,15 @@ import '../models/especie.dart';
 import '../theme.dart';
 import 'creditos_page.dart';
 import 'especie_detalhe_page.dart';
+import 'login_page.dart';
+import 'monitor_page.dart';
 
 class EspeciesPage extends StatefulWidget {
-  const EspeciesPage({super.key});
+  const EspeciesPage({super.key, this.inicial = false});
+
+  // true  = aberta logo depois do login: ao escolher, vai para o monitoramento
+  // false = aberta de dentro do monitoramento: ao escolher, só volta
+  final bool inicial;
 
   @override
   State<EspeciesPage> createState() => _EspeciesPageState();
@@ -71,12 +77,30 @@ class _EspeciesPageState extends State<EspeciesPage> {
       mensagens.showSnackBar(
         SnackBar(content: Text('Espécie do tanque: ${especie.nomeComum}')),
       );
-      if (navegador.canPop()) navegador.pop();
+      _seguir(navegador);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _selecionandoId = null);
       mensagens.showSnackBar(SnackBar(content: Text(e.mensagem)));
     }
+  }
+
+  // Depois da escolha: primeira tela -> monitoramento; senão -> volta
+  void _seguir(NavigatorState navegador) {
+    if (widget.inicial) {
+      navegador.pushReplacement(
+        MaterialPageRoute(builder: (_) => const MonitorPage()),
+      );
+    } else if (navegador.canPop()) {
+      navegador.pop();
+    }
+  }
+
+  Especie? get _especieEmUso {
+    for (final e in _especies) {
+      if (e.id == _especieEmUsoId) return e;
+    }
+    return null;
   }
 
   // Os filtros são aplicados aqui, com as regras do Quadro 6 do relatório.
@@ -95,6 +119,7 @@ class _EspeciesPageState extends State<EspeciesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !widget.inicial,
         title: const Text('AWPeixe',
             style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [
@@ -105,6 +130,12 @@ class _EspeciesPageState extends State<EspeciesPage> {
               MaterialPageRoute(builder: (_) => const CreditosPage()),
             ),
           ),
+          if (widget.inicial)
+            IconButton(
+              icon: const Icon(Icons.logout),
+              tooltip: 'Sair',
+              onPressed: () => sairDaSessao(context),
+            ),
         ],
         bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
@@ -138,6 +169,13 @@ class _EspeciesPageState extends State<EspeciesPage> {
           'Selecione a espécie para comparar as leituras com suas faixas ideais.',
           style: TextStyle(color: AppColors.textoSecundario),
         ),
+        if (widget.inicial && !_carregando && _especieEmUso != null) ...[
+          const SizedBox(height: 16),
+          _ContinuarComAtual(
+            especie: _especieEmUso!,
+            onContinuar: () => _seguir(Navigator.of(context)),
+          ),
+        ],
         const SizedBox(height: 16),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
@@ -253,6 +291,57 @@ class _EspeciesPageState extends State<EspeciesPage> {
         ),
       ),
     ];
+  }
+}
+
+// Faixa no topo da primeira tela: pula direto para o monitoramento
+// mantendo a espécie que já está no tanque.
+class _ContinuarComAtual extends StatelessWidget {
+  const _ContinuarComAtual({required this.especie, required this.onContinuar});
+
+  final Especie especie;
+  final VoidCallback onContinuar;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.okFundo,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.ok),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: AppColors.okTexto),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Espécie atual do tanque',
+                      style: TextStyle(color: AppColors.okTexto, fontSize: 12)),
+                  Text(
+                    especie.nomeComum,
+                    style: const TextStyle(
+                      color: AppColors.okTexto,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: onContinuar,
+              child: const Text('Continuar'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

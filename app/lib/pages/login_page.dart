@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../api.dart';
 import '../config.dart';
 import '../sessao.dart';
-import 'monitor_page.dart';
+import 'especies_page.dart';
 
 // Encerra a sessão e volta para o login, fechando todas as telas abertas.
 // Use no botão "Sair" (ex.: nas actions da AppBar do monitoramento).
@@ -51,8 +51,9 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await _api.entrar(_usuario.text.trim(), _senha.text);
       if (!mounted) return;
+      // Depois do login, a primeira tela é a escolha da espécie
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MonitorPage()),
+        MaterialPageRoute(builder: (_) => const EspeciesPage(inicial: true)),
       );
     } on ApiException catch (e) {
       if (!mounted) return;
